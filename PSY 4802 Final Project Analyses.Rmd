@@ -1,0 +1,70 @@
+---
+title: "PSY 4802 Final Project Analyses"
+author: "Anna Maristela"
+date: "2025-11-25"
+output: html_document
+---
+
+Uploading Data and Libraries
+```{r}
+violence <- read.csv("~/PSY 4802/Project-for-PSY-4802/20200306 Data International Women's Day Viz5 Launch.csv")
+View(violence)
+library(tidyverse)
+library(ggplot2)
+```
+
+Question 1
+```{r}
+violence$Question <- relevel(as.factor(violence$Question), ref = "... if she burns the food")
+summary(lm(Value ~ Question, data = violence))
+
+violence_question_one <- violence %>%
+  group_by(Question) %>%
+  summarize(mean = mean(Value, na.rm = TRUE), se = sd(Value, na.rm = TRUE) / sqrt(n()))
+
+ggplot(violence_question_one, aes(Question, mean)) + geom_bar(stat = "identity", position = position_dodge()) + theme(axis.text.x = element_text(angle = 90)) + labs(x = "Question Type", y = "Mean Justification of Violence Score Across Demographic Variables", title = "Main Effects of Type of Violence on Justification of Violence") + geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2)
+```
+
+Question 2
+```{r}
+summary(lm(Value ~ Question * Country, data = violence))
+
+violence_question_two <- violence %>%
+  group_by(Question, Country) %>%
+  summarize(mean = mean(Value, na.rm = TRUE), se = sd(Value, na.rm = TRUE) / sqrt(n()))
+
+ggplot(violence_question_two, aes(Question, mean, color = Country, group = Country)) + geom_point(size = 3) + geom_smooth(method = "lm") + facet_wrap(~ Country) + theme(axis.text.x = element_text(angle = 90)) + labs(x = "Question Type", y = "Mean Justification of Violence Score Across Demographic Variables", title = "Interaction Effects of Type of Violence × Country on Justification of Violence")
+#not sure if this type of graph makes sense here or if graph type from first question would be better here, will ask Dr. Woodward in next meeting on December 3
+```
+
+Question 3
+```{r}
+library(lme4)
+summary(lmer(Value ~ Question * Survey.Year + (1 | Country), data = violence))
+#not sure how linear mixed model effects should be visualized differently, will ask Dr. Woodward in next meeting on December 3
+```
+
+Question 4
+```{r}
+violence_wider <- pivot_wider(violence, id_cols = c("RecordID", "Country", "Gender", "Question", "Survey.Year", "Value"), names_from = "Demographics.Question", values_from = c("Demographics.Response")) #pivoted dataset wider
+
+violence_wider$Marital_status <- as.character(violence_wider$`Marital status`)
+violence_wider$Marital_status <- factor(violence_wider$Marital_status)
+#changed Marital status to Marital_status for easier coding and from list to character to factor (couldn't go straight to factor for some reason)
+
+violence_wider$Education <- as.character(violence_wider$Education)
+violence_wider$Education <- factor(violence_wider$Education)
+#changed from list to character to factor (couldn't go straight to factor for some reason)
+
+violence_wider$Residence <- as.character(violence_wider$Residence)
+violence_wider$Residence <- factor(violence_wider$Residence)
+#changed from list to character to factor (couldn't go straight to factor for some reason)
+
+violence_wider$Age <- as.character(violence_wider$Age)
+violence_wider$Age <- factor(violence_wider$Age)
+#changed from list to character to factor (couldn't go straight to factor for some reason)
+
+#lmer(Value ~ Question * Survey.Year * Marital_status * Education * Residence * Age + (1 | Country), data = violence_wider)
+#getting the following Error in qr.default(X, tol = tol, LAPACK = FALSE) : too large a matrix for LINPACK
+#should we rethink/rework question considering that a model containing all these interactions may be too large to interpret practically? also not sure how linear mixed model effects should be visualized differently, will ask Dr. Woodward about both these questions in next meeting on December 3
+```
